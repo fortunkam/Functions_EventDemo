@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace HandleEvents
+namespace HandleEvents.Support
 {
 
     public delegate void NewMessageEventHandler(string message);
