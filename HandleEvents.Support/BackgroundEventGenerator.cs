@@ -38,7 +38,7 @@ namespace HandleEvents.Support
                     NewMessage.Invoke(mb);
                 }
 
-                Thread.Sleep(5000);
+                Thread.Sleep(3000);
             }
         }
 

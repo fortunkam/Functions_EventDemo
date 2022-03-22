@@ -64,7 +64,16 @@ namespace HandleEvents.Durable
                 Name = context.GetInput<string>(),
                 runDuration = new TimeSpan(0,5,0)
             };
-            await context.CallActivityAsync("ProcessMailbox", mailData);
+
+            var tasks = new List<Task>();
+            tasks.Add(context.WaitForExternalEvent($"EndProcess_{mailData.Name}"));
+            tasks.Add(context.CallActivityAsync("ProcessMailbox", mailData));
+
+
+
+            var completedTask = await Task.WhenAny(tasks);
+            await completedTask;
+
 
             context.ContinueAsNew(null);
         }
