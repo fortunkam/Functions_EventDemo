@@ -7,22 +7,47 @@
 </head>
 <body>
     <h1>Mailbox Monitor</h1>
-    <table id="mailboxes" class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody data-bind="foreach:mailboxes">
-            <tr>
-                <td data-bind="text: $data"></td>
-                <td>
-                    <button data-bind="click: $parent.restartMailbox">Restart</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="container" >
+        <div class="row">
+            <div class="col-8">
+                <h2>Mailboxes</h2>
+                <table id="mailboxes" class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach:mailboxes">
+                        <tr>
+                            <td data-bind="text: $data"></td>
+                            <td>
+                                <button data-bind="click: $parent.restartMailbox">Restart</button>
+                            </td>
+                            <td>
+                                <button data-bind="click: $parent.startLogStream, enable: $parent.canStreamStart">Start Log Streaming</button>
+                            </td>
+                            <td>
+                                <button data-bind="click: $parent.stopLogStream, enable: $parent.streamingMailbox() == $data">Stop Log Streaming</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+             </div>
+            <div class="col-4">
+                  <h2>Logs</h2>
+                   <h3 data-bind="text: streamingMailbox, visible: logsRunning"></h3>
+                   <ul data-bind="foreach: logMessages">
+                       <li>
+                            <span data-bind="text: time"> </span> :
+                            <span data-bind="text: message"> </span>
+                       </li>
+                   </ul>
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="https://ajax.aspnetcdn.com/ajax/signalr/jquery.signalr-2.1.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
@@ -41,6 +66,14 @@
             
         });
 
+        monitorChatHubProxy.on('MailboxLog', function (name, message, time) {
+            appModel.logMessages.push({
+                "name": name,
+                "message": message,
+                "time": time
+            });
+        });
+
         connection.start().done(function () {
             console.log('started');
             
@@ -50,10 +83,39 @@
             var self = this;
 
             self.mailboxes = ko.observableArray([]);
+            self.logMessages = ko.observableArray([]);
+
+            self.streamingMailbox = ko.observable('');
+
+            self.canStreamStart = ko.computed(function () {
+                return self.streamingMailbox() == '';
+            })
+
+            self.canStreamStop = ko.computed(function () {
+                return self.streamingMailbox() == this;
+            })
+
+            self.logsRunning = ko.computed(function () {
+                return self.streamingMailbox() != '';
+            })
+
 
             self.restartMailbox = function () {
                 console.log("Restart Mailbox clicked for " + this);
                 monitorChatHubProxy.invoke('SendRestartMailbox', this);
+            }
+
+            self.startLogStream = function () {
+                console.log("Start Logs Stream for " + this);
+                monitorChatHubProxy.invoke('SendMailboxMonitorStart', this);
+                self.streamingMailbox(this);
+            }
+
+            self.stopLogStream = function () {
+                console.log("Start Logs Stream for " + this);
+                monitorChatHubProxy.invoke('SendMailboxMonitorEnd', this);
+                self.streamingMailbox('');
+                self.logMessages([]);
             }
         }
 

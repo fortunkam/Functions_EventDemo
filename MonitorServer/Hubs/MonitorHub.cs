@@ -9,9 +9,9 @@ namespace MonitorServer.Hubs
 {
     public class MonitorHub : Hub
     {
-        public async Task SendMailboxLog(string name, string message)
+        public async Task SendMailboxLog(string name, string message, string time)
         {
-            await Clients.All.MailboxLog(name, message);
+            await Clients.All.MailboxLog(name, message, time);
         }
 
         public async Task SendRestartMailbox(string name)

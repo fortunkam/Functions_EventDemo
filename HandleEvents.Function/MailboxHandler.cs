@@ -34,11 +34,11 @@ namespace HandleEvents
                 var mailboxEvents = new BackgroundEventGenerator();
                 mailboxEvents.NewMessage += (message) =>
                 {
-                    var logMessage = $"New Message arrived from mailbox {mailboxName} {message}";
+                    var logMessage = $"New Message arrived in mailbox {mailboxName}";
                     log.Info(logMessage);
                     if(broadcastEvents)
                     {
-                        proxy.Invoke("SendMailboxLog", logMessage);
+                        proxy.Invoke("SendMailboxLog", mailboxName, logMessage, DateTime.UtcNow.ToString("s"));
                     }
                 };
 
@@ -47,7 +47,12 @@ namespace HandleEvents
                 {
                     if (name == mailboxName)
                     {
-                        log.Info($"MailboxHandler {name}: Restart mailbox event");
+                        var logMessage = $"****MailboxHandler {name}: Restart mailbox event****";
+                        log.Warning(logMessage);
+                        if (broadcastEvents)
+                        {
+                            proxy.Invoke("SendMailboxLog", mailboxName, logMessage, DateTime.UtcNow.ToString("s"));
+                        }
                         mailboxEvents.Stop();
                         mailboxEvents.Start(mailboxName);
                     }
@@ -61,7 +66,7 @@ namespace HandleEvents
                     }
                 });
 
-                proxy.On<string>("MailboxMonitorStop", (name) =>
+                proxy.On<string>("MailboxMonitorEnd", (name) =>
                 {
                     if (name == mailboxName)
                     {
